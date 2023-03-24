@@ -185,17 +185,26 @@ class PDFDocumentWithTables extends PDFDocument {
         //   startY += 3;
         // };
 
+
+
         // event emitter
         const onFirePageAdded = () => {
           // startX = this.page.margins.left;
           startY = this.page.margins.top;
           rowBottomY = 0;
           // lockAddPage || this.addPage(this.options);
-          lockAddPage || this.addPage({
-            layout: this.page.layout,
-            size: this.page.size,
-            margins: this.page.margins,
-          });
+
+          if (options.continue) {
+            // switch to next page
+            this.switchToPage(++options.pageCount);
+          } else {
+            lockAddPage || this.addPage({
+              layout: this.page.layout,
+              size: this.page.size,
+              margins: this.page.margins,
+            });
+          }
+
           lockAddHeader || addHeader();
           //addHeader();
         };
