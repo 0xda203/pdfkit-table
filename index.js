@@ -107,7 +107,7 @@ class PDFDocumentWithTables extends PDFDocument {
         let columnPositions = []; // 0, 10, 20, 30, 100
         let columnWidth = 0;
 
-        const rowDistance = 0.5;
+        const rowDistance = options.rowDistance || 0.5;
         let cellPadding = { top: 0, right: 0, bottom: 0, left: 0 }; // universal
 
         const prepareHeader = options.prepareHeader || (() => this.fillColor('black').font("Helvetica-Bold").fontSize(8).fill());
@@ -119,6 +119,14 @@ class PDFDocumentWithTables extends PDFDocument {
 
         let startX = options.x || this.x || this.page.margins.left;
         let startY = options.y || this.y || this.page.margins.top;
+
+        // draw a line at startY
+        // this
+        //   .lineWidth(0.5)
+        //   .strokeColor('red')
+        //   .moveTo(startX, startY)
+        //   .lineTo(startX + 100, startY)
+        //   .stroke();
 
         let lastPositionX = 0;
         let rowBottomY = 0;
@@ -185,26 +193,17 @@ class PDFDocumentWithTables extends PDFDocument {
         //   startY += 3;
         // };
 
-
-
         // event emitter
         const onFirePageAdded = () => {
           // startX = this.page.margins.left;
           startY = this.page.margins.top;
           rowBottomY = 0;
           // lockAddPage || this.addPage(this.options);
-
-          if (options.continue) {
-            // switch to next page
-            this.switchToPage(++options.pageCount);
-          } else {
-            lockAddPage || this.addPage({
-              layout: this.page.layout,
-              size: this.page.size,
-              margins: this.page.margins,
-            });
-          }
-
+          lockAddPage || this.addPage({
+            layout: this.page.layout,
+            size: this.page.size,
+            margins: this.page.margins,
+          });
           lockAddHeader || addHeader();
           //addHeader();
         };
@@ -387,6 +386,20 @@ class PDFDocumentWithTables extends PDFDocument {
               align: 'left',
             });
 
+            // calculate the number of lines
+            const lines = Math.ceil(cellHeight / (options.fontSize || 10));
+
+            // calc height of row
+
+            if (options.flexibleRowHeight) {
+              if (isHeader) {
+                result = Math.max(result, cellHeight);
+              } else {
+                result = Math.max(result, cellHeight + (lines * 2));
+              }
+
+            }
+
             result = Math.max(result, cellHeight);
           });
 
@@ -396,7 +409,7 @@ class PDFDocumentWithTables extends PDFDocument {
           //   computeRowHeight(row);
           // }
 
-          return result + (columnSpacing);
+          return row.every(element => element === '') ? 1 : result + (columnSpacing);
         };
 
         // Calc columns size
@@ -870,7 +883,7 @@ class PDFDocumentWithTables extends PDFDocument {
           const rectRow = {
             x: columnPositions[0],
             // x: startX, 
-            y: startY - columnSpacing - (rowDistance * 2),
+            y: startY - columnSpacing - (rowDistance * 3),
             width: tableWidth - startX,
             height: rowHeight + columnSpacing,
           }
@@ -888,7 +901,7 @@ class PDFDocumentWithTables extends PDFDocument {
             const rectCell = {
               // x: columnPositions[index],
               x: lastPositionX,
-              y: startY - columnSpacing - (rowDistance * 2),
+              y: startY - columnSpacing - (rowDistance * 3),
               width: columnSizes[index],
               height: rowHeight + columnSpacing,
             }
