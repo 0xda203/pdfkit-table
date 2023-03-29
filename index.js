@@ -121,13 +121,6 @@ class PDFDocumentWithTables extends PDFDocument {
         let startY = options.y || this.y || this.page.margins.top;
 
         // draw a line at startY
-        // this
-        //   .lineWidth(0.5)
-        //   .strokeColor('red')
-        //   .moveTo(startX, startY)
-        //   .lineTo(startX + 100, startY)
-        //   .stroke();
-
         let lastPositionX = 0;
         let rowBottomY = 0;
 
@@ -766,7 +759,6 @@ class PDFDocumentWithTables extends PDFDocument {
               // this.font('Helvetica-Bold');
               text = text.replace('attachment:', '');
               extra.link = text;
-              console.log('attachment')
             }
 
             if (String(text).indexOf('center:') === 0) {
