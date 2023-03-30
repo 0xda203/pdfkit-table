@@ -197,6 +197,18 @@ class PDFDocumentWithTables extends PDFDocument {
             size: this.page.size,
             margins: this.page.margins,
           });
+
+          if (options.continue) {
+            // switch to next page
+            this.switchToPage(++options.pageCount);
+          } else {
+            lockAddPage || this.addPage({
+              layout: this.page.layout,
+              size: this.page.size,
+              margins: this.page.margins,
+            });
+          }
+
           lockAddHeader || addHeader();
           //addHeader();
         };
