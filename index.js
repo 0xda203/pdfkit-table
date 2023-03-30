@@ -380,7 +380,21 @@ class PDFDocumentWithTables extends PDFDocument {
             });
 
             // calculate the number of lines
-            const lines = Math.ceil(cellHeight / (options.fontSize || 10));
+            // const lines = Math.abs(Math.ceil(this.fontSize(12).widthOfString(text, {
+            //   width: columnSizes[i] - (cellp.left + cellp.right),
+            //   align: 'justify',
+            // }) / (columnSizes[i] - (cellp.left + cellp.right))));
+
+            let fontSize = this._fontSize;
+
+            this.fontSize(12);
+
+            let lines = Math.ceil(this.widthOfString(text, {
+              width: columnSizes[i] - (cellp.left + cellp.right),
+              align: 'left',
+            }) / (columnSizes[i] - (cellp.left + cellp.right)));
+
+            this.fontSize(fontSize);
 
             // calc height of row
 
@@ -388,7 +402,7 @@ class PDFDocumentWithTables extends PDFDocument {
               if (isHeader) {
                 result = Math.max(result, cellHeight);
               } else {
-                result = Math.max(result, cellHeight + (lines * 2));
+                result = Math.max(result, cellHeight + (lines * 5));
               }
 
             }
