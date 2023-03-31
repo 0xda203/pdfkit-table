@@ -177,24 +177,20 @@ class PDFDocumentWithTables extends PDFDocument {
         // add a new page before crate table
         options.addPage === true && onFirePageAdded(); // this.emitter.emit('addPage'); //this.addPage();
 
-        // // create title and subtitle
-        // createTitle( title, 12, 1 );
-        // createTitle( subtitle, 9, 0.7 );
-
-        // add space after title
-        // if( title || subtitle ){
-        //   startY += 3;
-        // };
-
         // event emitter
         const onFirePageAdded = () => {
           // startX = this.page.margins.left;
           startY = this.page.margins.top;
           rowBottomY = 0;
 
+          options.pageCount = options.pageCount || options.startPage;
+
           if (options.continue) {
-            // switch to next page
-            this.switchToPage(++options.pageCount);
+            if (options.pageCount === options.startPage) {
+              startY = options.startY;
+            }
+
+            this.switchToPage(options.pageCount++);
           } else {
             lockAddPage || this.addPage({
               layout: this.page.layout,
@@ -384,12 +380,6 @@ class PDFDocumentWithTables extends PDFDocument {
               width: columnSizes[i] - (cellp.left + cellp.right),
               align: 'left',
             });
-
-            // calculate the number of lines
-            // const lines = Math.abs(Math.ceil(this.fontSize(12).widthOfString(text, {
-            //   width: columnSizes[i] - (cellp.left + cellp.right),
-            //   align: 'justify',
-            // }) / (columnSizes[i] - (cellp.left + cellp.right))));
 
             let fontSize = this._fontSize;
 
