@@ -133,7 +133,7 @@ class PDFDocumentWithTables extends PDFDocument {
         let lockAddTitles = false; // to addd title one time
         let lockAddPage = false;
         let lockAddHeader = false;
-        let safelyMarginBottom = this.page.margins.top / 2;
+        let safelyMarginBottom = this.page.margins.bottom;
 
         // reset position to margins.left
         if (options.x === null || options.x === -1) {
