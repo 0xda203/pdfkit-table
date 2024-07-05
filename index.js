@@ -467,535 +467,330 @@ class PDFDocumentWithTables extends PDFDocument {
         // Header
 
         const addHeader = () => {
-
           // Allow the user to override style for headers
           prepareHeader();
-
+      
           // calc header height
           if (this.headerHeight === 0) {
-            this.headerHeight = computeRowHeight(table.headers, true);
-            this.logg(this.headerHeight, 'headers');
+              this.headerHeight = computeRowHeight(table.headers, true);
+              this.logg(this.headerHeight, 'headers');
           }
-
+      
           // calc first table line when init table
           if (firstLineHeight === 0) {
-            if (table.datas.length > 0) {
-              firstLineHeight = computeRowHeight(table.datas[0], true);
-              this.logg(firstLineHeight, 'datas');
-            }
-            if (table.rows.length > 0) {
-              firstLineHeight = computeRowHeight(table.rows[0], true);
-              this.logg(firstLineHeight, 'rows');
-            }
+              if (table.datas.length > 0) {
+                  firstLineHeight = computeRowHeight(table.datas[0], true);
+                  this.logg(firstLineHeight, 'datas');
+              }
+              if (table.rows.length > 0) {
+                  firstLineHeight = computeRowHeight(table.rows[0], true);
+                  this.logg(firstLineHeight, 'rows');
+              }
           }
-
+      
           // 24.1 is height calc title + subtitle
           titleHeight = !lockAddTitles ? 24.1 : 0;
           // calc if header + first line fit on last page
-          const calc = startY + titleHeight + firstLineHeight + this.headerHeight + safelyMarginBottom// * 1.3;
-
-          // content is big text (crazy!)
-          if (firstLineHeight > maxY) {
-            // lockAddHeader = true;
-            lockAddPage = true;
-            this.logg('CRAZY! This a big text on cell');
-          } else if (calc > maxY) { // && !lockAddPage
-            // lockAddHeader = false;
-            lockAddPage = true;
-            onFirePageAdded(); // this.emitter.emit('addPage'); //this.addPage();
-            return;
+          const calc = startY + titleHeight + firstLineHeight + this.headerHeight + safelyMarginBottom;
+      
+          if (startY + this.headerHeight >= maxY) {
+              // Add a page before adding headers if they do not fit
+              this.addPage();
+              startY = this.page.margins.top;
+              rowBottomY = 0; // Reset row bottom position
           }
-
+      
           // if has title
           if (lockAddTitles === false) {
-
-            // create title and subtitle
-            createTitle(title, 12, 1);
-            createTitle(subtitle, 9, 0.7);
-
-            // add space after title
-            if (title || subtitle) {
-              startY += 3;
-            };
-
+              // create title and subtitle
+              createTitle(title, 12, 1);
+              createTitle(subtitle, 9, 0.7);
+      
+              // add space after title
+              if (title || subtitle) {
+                  startY += 3;
+              }
           }
-
+      
           // Allow the user to override style for headers
           prepareHeader();
-
+      
           lockAddTitles = true;
-
-          // this options is trial
-          if (options.absolutePosition === true) {
-            lastPositionX = options.x || startX || this.x; // x position head
-            startY = options.y || startY || this.y; // x position head  
-          } else {
-            lastPositionX = startX; // x position head  
-          }
-
-          // Check to have enough room for header and first rows. default 3
-          // if (startY + 2 * this.headerHeight >= maxY) this.emitter.emit('addPage'); //this.addPage();
-
+      
           if (!options.hideHeader && table.headers.length > 0) {
-
-            // simple header
-            if (typeof table.headers[0] === 'string') {
-
-              // // background header
-              // const rectRow = {
-              //   x: startX, 
-              //   y: startY - columnSpacing - (rowDistance * 2), 
-              //   width: columnWidth, 
-              //   height: this.headerHeight + columnSpacing,
-              // };
-
-              // // add background
-              // this.addBackground(rectRow);
-
-              // print headers
-              table.headers.forEach((header, i) => {
-
-                // background header
-                const rectCell = {
-                  x: lastPositionX,
-                  y: startY - columnSpacing - (rowDistance * 2),
-                  width: columnSizes[i],
-                  height: this.headerHeight + columnSpacing,
-                };
-
-                // add background
-                this.addBackground(rectCell);
-
-                // cell padding
-                cellPadding = prepareCellPadding(options.padding || 0);
-
-                // write
-                this.text(header,
-                  lastPositionX + (cellPadding.left),
-                  startY, {
-                  width: Number(columnSizes[i]) - (cellPadding.left + cellPadding.right),
-                  align: 'left',
-                });
-
-                lastPositionX += columnSizes[i] >> 0;
-
-              });
-
-            } else {
-
-              // Print all headers
               table.headers.forEach((dataHeader, i) => {
-
-                let { label, width, renderer, align, headerColor, headerOpacity, headerAlign, padding } = dataHeader;
-                // check defination
-                width = width || columnSizes[i];
-                align = headerAlign || align || 'left';
-                // force number
-                width = width >> 0;
-
-                // register renderer function
-                if (renderer && typeof renderer === 'string') {
-                  table.headers[i].renderer = fEval(renderer);
-                }
-
-                // # Rotation
-                // var doTransform = function (x, y, angle) {
-                //   var rads = angle / 180 * Math.PI;
-                //   var newX = x * Math.cos(rads) + y * Math.sin(rads);
-                //   var newY = y * Math.cos(rads) - x * Math.sin(rads);
-
-                //   return {
-                //       x: newX,
-                //       y: newY,
-                //       rads: rads,
-                //       angle: angle
-                //       };
-                //   };
-                // }
-                // this.save(); // rotation
-                // this.rotate(90, {origin: [lastPositionX, startY]});
-                // width = 50;
-
-                // background header
-                const rectCell = {
-                  x: lastPositionX,
-                  y: startY - columnSpacing - (rowDistance * 2),
-                  width: width,
-                  height: this.headerHeight + columnSpacing,
-                };
-
-                // add background
-                this.addBackground(rectCell, headerColor, headerOpacity);
-
-                // cell padding
-                cellPadding = prepareCellPadding(padding || options.padding || 0);
-
-                // write
-                this.text(label,
-                  lastPositionX + (cellPadding.left),
-                  startY, {
-                  width: width - (cellPadding.left + cellPadding.right),
-                  align: align,
-                })
-
-                lastPositionX += width;
-                // this.restore(); // rotation
-
+                  let { label, width, renderer, align, headerColor, headerOpacity, headerAlign, padding } = dataHeader;
+                  width = width || columnSizes[i];
+                  align = headerAlign || align || 'left';
+                  width = width >> 0;
+      
+                  if (renderer && typeof renderer === 'string') {
+                      table.headers[i].renderer = fEval(renderer);
+                  }
+      
+                  const rectCell = {
+                      x: lastPositionX,
+                      y: startY - columnSpacing - (rowDistance * 2),
+                      width: width,
+                      height: this.headerHeight + columnSpacing,
+                  };
+      
+                  this.addBackground(rectCell, headerColor, headerOpacity);
+      
+                  cellPadding = prepareCellPadding(padding || options.padding || 0);
+      
+                  this.text(label,
+                      lastPositionX + (cellPadding.left),
+                      startY, {
+                          width: width - (cellPadding.left + cellPadding.right),
+                          align: align,
+                      });
+      
+                  lastPositionX += width;
               });
-
-            }
-
-            // set style
-            prepareRowOptions(table.headers);
-
+      
+              prepareRowOptions(table.headers);
           }
-
+      
           if (!options.hideHeader) {
-            // Refresh the y coordinate of the bottom of the headers row
-            rowBottomY = Math.max(startY + computeRowHeight(table.headers, true), rowBottomY);
-            // Separation line between headers and rows
-            separationsRow('header', startX, rowBottomY);
+              rowBottomY = Math.max(startY + computeRowHeight(table.headers, true), rowBottomY);
+              separationsRow('header', startX, rowBottomY);
           } else {
-            rowBottomY = startY;
+              rowBottomY = startY;
           }
-
-        };
-
+      };
         // End header
         addHeader();
 
         // Datas
         table.datas.forEach((row, i) => {
-
-          this.datasIndex = i;
           const rowHeight = computeRowHeight(row, false);
-          this.logg(rowHeight);
-
-          // Switch to next page if we cannot go any further because the space is over.
-          // For safety, consider 3 rows margin instead of just one
-          // if (startY + 2 * rowHeight < maxY) startY = rowBottomY + columnSpacing + rowDistance; // 0.5 is spacing rows
-          // else this.emitter.emit('addPage'); //this.addPage();
-          if (options.useSafelyMarginBottom && this.y + safelyMarginBottom + rowHeight >= maxY && !lockAddPage) onFirePageAdded(); // this.emitter.emit('addPage'); //this.addPage();    
-
-          // calc position
-          startY = rowBottomY + columnSpacing + rowDistance; // 0.5 is spacing rows
-
-          // unlock add page function
+      
+          if (this.y + rowHeight + safelyMarginBottom >= maxY) {
+              // Add a page before adding rows if they do not fit
+              this.addPage();
+              startY = this.page.margins.top;
+              rowBottomY = 0; // Reset row bottom position
+          }
+      
+          startY = rowBottomY + columnSpacing + rowDistance;
+      
           lockAddPage = false;
-
+      
           const rectRow = {
-            x: startX,
-            y: startY - columnSpacing - (rowDistance * 2),
-            width: tableWidth - startX,
-            height: rowHeight + columnSpacing,
-          };
-
-          // add background row
-          prepareRowBackground(row, rectRow);
-
-          lastPositionX = startX;
-
-          // Print all cells of the current row
-          table.headers.forEach((dataHeader, index) => {
-
-            let { property, width, renderer, align, valign, padding } = dataHeader;
-
-            // check defination
-            width = width || columnWidth;
-            align = align || 'left';
-
-            // cell padding
-            cellPadding = prepareCellPadding(padding || options.padding || 0);
-
-            const rectCell = {
-              x: lastPositionX,
+              x: startX,
               y: startY - columnSpacing - (rowDistance * 2),
-              width: width,
+              width: tableWidth - startX,
               height: rowHeight + columnSpacing,
-            }
-
-            // allow the user to override style for rows
-            prepareRowOptions(row);
-            prepareRow(row, index, i, rectRow, rectCell,);
-
-            let text = row[property];
-
-            // cell object
-            if (typeof text === 'object') {
-
-              text = String(text.label); // get label
-              // row[property].hasOwnProperty('options') && prepareRowOptions(row[property]); // set style
-
-              // options if text cell is object
-              if (row[property].hasOwnProperty('options')) {
-
-                // set font style
-                prepareRowOptions(row[property]);
-                prepareRowBackground(row[property], rectCell);
-
+          };
+      
+          prepareRowBackground(row, rectRow);
+      
+          lastPositionX = startX;
+      
+          table.headers.forEach((dataHeader, index) => {
+              let { property, width, renderer, align, valign, padding } = dataHeader;
+      
+              width = width || columnWidth;
+              align = align || 'left';
+      
+              cellPadding = prepareCellPadding(padding || options.padding || 0);
+      
+              const rectCell = {
+                  x: lastPositionX,
+                  y: startY - columnSpacing - (rowDistance * 2),
+                  width: width,
+                  height: rowHeight + columnSpacing,
+              };
+      
+              prepareRowOptions(row);
+              prepareRow(row, index, i, rectRow, rectCell);
+      
+              let text = row[property];
+      
+              if (typeof text === 'object') {
+                  text = String(text.label);
+                  if (row[property].hasOwnProperty('options')) {
+                      prepareRowOptions(row[property]);
+                      prepareRowBackground(row[property], rectCell);
+                  }
+              } else {
+                  prepareRowBackground(table.headers[index], rectCell);
               }
-
-            } else {
-
-              // style column by header
-              prepareRowBackground(table.headers[index], rectCell);
-
-            }
-
-            // bold
-            if (String(text).indexOf('bold:') === 0) {
-              this.font('Helvetica-Bold');
-              text = text.replace('bold:', '');
-            }
-
-            let extra = {};
-
-            https://almoctane-ams.saas.microfocus.com/api/shared_spaces/522013/workspaces/1002/attachments/22011/ECT.docx
-
-            if (String(text).indexOf('link:') === 0) {
-              // this.font('Helvetica-Bold');
-              text = text.replace('link:', '');
-              extra.link = `https://almoctane-ams.saas.microfocus.com/ui/entity-navigation?p=${options.shared_space}/${options.workspace}&entityType=run&id=${text.split(': ')[1]}`;
-            }
-
-            if (String(text).indexOf('attachment:') === 0) {
-              // this.font('Helvetica-Bold');
-              text = text.replace('attachment:', '');
-              extra.link = text;
-            }
-
-            if (String(text).indexOf('center:') === 0) {
-              text = text.replace('center:', '');
-            }
-
-            // size
-            if (String(text).indexOf('size') === 0) {
-              let size = String(text).substr(4, 2).replace(':', '').replace('+', '') >> 0;
-              this.fontSize(size < 7 ? 7 : size);
-              text = text.replace(`size${size}:`, '');
-            }
-
-            // renderer column
-            // renderer && (text = renderer(text, index, i, row, rectRow, rectCell)) // value, index-column, index-row, row  nbhmn
-            if (typeof renderer === 'function') {
-              text = renderer(text, index, i, row, rectRow, rectCell); // value, index-column, index-row, row, doc[this]
-            }
-
-            // TODO # Experimental
-            // ------------------------------------------------------------------------------
-            // align vertically
-            let topTextToAlignVertically = 0;
-            if (valign && valign !== 'top') {
-              const heightText = this.heightOfString(text, {
-                width: width - (cellPadding.left + cellPadding.right),
-                align: align,
-              });
-              // line height, spacing hehight, cell and text diference
-              topTextToAlignVertically = rowDistance - columnSpacing + (rectCell.height - heightText) / 2;
-            }
-            // ------------------------------------------------------------------------------
-            if (!text.includes(':')) {
-              this.fillColor(extra.link ? '#0462c1' : 'black').text(text,
-                lastPositionX + (cellPadding.left),
-                startY + topTextToAlignVertically, {
-                width: width - (cellPadding.left + cellPadding.right),
-                align: align,
-                // ...extra,
-                ...(extra.link && { link: extra.link }),
-                align: 'center'
-              });
-            } else {
-              let [first, ...rest] = text.split(':');
-              rest = rest.join(':');
-
-              this.font('Helvetica-Bold').text(first + ': ',
-                lastPositionX + (cellPadding.left),
-                startY + topTextToAlignVertically, {
-                width: width - (cellPadding.left + cellPadding.right),
-                align: align,
-                continued: true
-              }).font('Helvetica').fillColor(extra.link ? '#0462c1' : 'black').text(rest,
-                lastPositionX + (cellPadding.left),
-                startY + topTextToAlignVertically, {
-                width: width - (cellPadding.left + cellPadding.right),
-                align: align,
-                continued: false,
-                ...extra
-              });
-            }
-
-            lastPositionX += width;
-
-            // set style
-            // Maybe REMOVE ???
-            prepareRowOptions(row);
-            prepareRow(row, index, i, rectRow, rectCell);
-
+      
+              if (String(text).indexOf('bold:') === 0) {
+                  this.font('Helvetica-Bold');
+                  text = text.replace('bold:', '');
+              }
+      
+              let extra = {};
+              if (String(text).indexOf('link:') === 0) {
+                  text = text.replace('link:', '');
+                  extra.link = `https://almoctane-ams.saas.microfocus.com/ui/entity-navigation?p=${options.shared_space}/${options.workspace}&entityType=run&id=${text.split(': ')[1]}`;
+              }
+      
+              if (String(text).indexOf('attachment:') === 0) {
+                  text = text.replace('attachment:', '');
+                  extra.link = text;
+              }
+      
+              let topTextToAlignVertically = 0;
+              if (valign && valign !== 'top') {
+                  const heightText = this.heightOfString(text, {
+                      width: width - (cellPadding.left + cellPadding.right),
+                      align: align,
+                  });
+                  topTextToAlignVertically = rowDistance - columnSpacing + (rectCell.height - heightText) / 2;
+              }
+      
+              if (!text.includes(':')) {
+                  this.fillColor(extra.link ? '#0462c1' : 'black').text(text,
+                      lastPositionX + (cellPadding.left),
+                      startY + topTextToAlignVertically, {
+                          width: width - (cellPadding.left + cellPadding.right),
+                          align: align,
+                          ...(extra.link && { link: extra.link }),
+                          align: 'center'
+                      });
+              } else {
+                  let [first, ...rest] = text.split(':');
+                  rest = rest.join(':');
+      
+                  this.font('Helvetica-Bold').text(first + ': ',
+                      lastPositionX + (cellPadding.left),
+                      startY + topTextToAlignVertically, {
+                          width: width - (cellPadding.left + cellPadding.right),
+                          align: align,
+                          continued: true
+                      }).font('Helvetica').fillColor(extra.link ? '#0462c1' : 'black').text(rest,
+                      lastPositionX + (cellPadding.left),
+                      startY + topTextToAlignVertically, {
+                          width: width - (cellPadding.left + cellPadding.right),
+                          align: align,
+                          continued: false,
+                          ...extra
+                      });
+              }
+      
+              lastPositionX += width;
+      
+              prepareRowOptions(row);
+              prepareRow(row, index, i, rectRow, rectCell);
           });
-
-          // Refresh the y coordinate of the bottom of this row
+      
           rowBottomY = Math.max(startY + rowHeight, rowBottomY);
-
-          // console.log(this.page.height, rowBottomY, this.y);
-          // text is so big as page (crazy!)
+      
           if (rowBottomY > this.page.height) {
-            rowBottomY = this.y + columnSpacing + (rowDistance * 2);
+              rowBottomY = this.y + columnSpacing + (rowDistance * 2);
           }
-
-          // Separation line between rows
-          // separationsRow('horizontal', startX, rowBottomY);
-
-          // review this code
-          if (row.hasOwnProperty('options')) {
-            if (row.options.hasOwnProperty('separation')) {
-              // Separation line between rows
-              // separationsRow('horizontal', startX, rowBottomY, 1, 1);
-            }
-          }
-
-        });
+      });
         // End datas
 
         // Rows
         table.rows.forEach((row, i) => {
-
-          this.rowsIndex = i;
           const rowHeight = computeRowHeight(row, false);
-          this.logg(rowHeight);
-
-          // Switch to next page if we cannot go any further because the space is over.
-          // For safety, consider 3 rows margin instead of just one
-          // if (startY + 3 * rowHeight < maxY) startY = rowBottomY + columnSpacing + rowDistance; // 0.5 is spacing rows
-          // else this.emitter.emit('addPage'); //this.addPage(); 
-
-          if (options.useSafelyMarginBottom && this.y + safelyMarginBottom + rowHeight >= maxY && !lockAddPage) { onFirePageAdded(); } // this.emitter.emit('addPage'); //this.addPage(); 
-
-          // calc position
-          startY = rowBottomY + columnSpacing + rowDistance; // 0.5 is spacing rows
-
-          // unlock add page function
+      
+          if (this.y + rowHeight + safelyMarginBottom >= maxY) {
+              // Add a page before adding rows if they do not fit
+              this.addPage();
+              startY = this.page.margins.top;
+              rowBottomY = 0; // Reset row bottom position
+          }
+      
+          startY = rowBottomY + columnSpacing + rowDistance;
+      
           lockAddPage = false;
-
+      
           const rectRow = {
-            x: columnPositions[0],
-            // x: startX, 
-            y: startY - columnSpacing - (rowDistance * 3),
-            width: tableWidth - startX,
-            height: rowHeight + columnSpacing,
-          }
-
-          // add background
-          // doc.addBackground(rectRow);
-
-          lastPositionX = startX;
-
-          row.forEach((cell, index) => {
-
-            let align = 'left';
-            let valign = undefined;
-
-            const rectCell = {
-              // x: columnPositions[index],
-              x: lastPositionX,
+              x: columnPositions[0],
               y: startY - columnSpacing - (rowDistance * 3),
-              width: columnSizes[index],
+              width: tableWidth - startX,
               height: rowHeight + columnSpacing,
-            }
-
-            prepareRowBackground(table.headers[index], rectCell);
-
-            // Allow the user to override style for rows
-            prepareRow(row, index, i, rectRow, rectCell);
-
-            if (typeof table.headers[index] === 'object') {
-              // renderer column
-              table.headers[index].renderer && (cell = table.headers[index].renderer(cell, index, i, row, rectRow, rectCell, this)); // text-cell, index-column, index-line, row, doc[this]
-              // align
-              table.headers[index].align && (align = table.headers[index].align);
-              table.headers[index].valign && (valign = table.headers[index].valign);
-            }
-
-            // cell padding
-            cellPadding = prepareCellPadding(table.headers[index].padding || options.padding || 0);
-
-            // TODO # Experimental
-            // ------------------------------------------------------------------------------
-            // align vertically
-            let topTextToAlignVertically = 0;
-            if (valign && valign !== 'top') {
-              const heightText = this.heightOfString(cell, {
-                width: columnSizes[index] - (cellPadding.left + cellPadding.right),
-                align: align,
-              });
-              // line height, spacing hehight, cell and text diference
-              topTextToAlignVertically = rowDistance - columnSpacing + (rectCell.height - heightText) / 2;
-            }
-            // ------------------------------------------------------------------------------
-
-            let bold = false;
-            if ((cell + '').includes('bold:')) {
-              bold = true;
-              cell = cell.replace('bold:', '');
-            }
-
-            let attachment = false;
-            if ((cell + '').includes('attachment:')) {
-              // this.font('Helvetica-Bold');
-              cell = cell.replace('attachment:', '');
-              attachment = cell;
-            }
-
-            if ((cell + '').includes('section:')) {
-              // this.font('Helvetica-Bold');
-              cell = cell.replace('section:', '')
-              let aux = cell.split('.')[0];
-              attachment = aux;
-            }
-
-            // set style
-            if (bold) {
-              this.font('Helvetica-Bold').fillColor(attachment ? '#0462c1' : 'black').text(cell,
-                lastPositionX + (cellPadding.left),
-                startY + topTextToAlignVertically, {
-                width: columnSizes[index] - (cellPadding.left + cellPadding.right),
-                align: (i === 1 && options.firstLineCentered) ? 'center' : align,
-                ...(attachment && { link: attachment }),
-              });
-            } else {
-              this.font('Helvetica').fillColor(attachment ? '#0462c1' : 'black').text(cell,
-                lastPositionX + (cellPadding.left),
-                startY + topTextToAlignVertically, {
-                width: columnSizes[index] - (cellPadding.left + cellPadding.right),
-                align: (i === 1 && options.firstLineCentered) ? 'center' : align,
-                ...(attachment && { link: attachment }),
-              });
-
-            }
-
-
-            lastPositionX += columnSizes[index];
-            this.y = startY + rowHeight
-
-
-
+          };
+      
+          lastPositionX = startX;
+      
+          row.forEach((cell, index) => {
+              let align = 'left';
+              let valign = undefined;
+      
+              const rectCell = {
+                  x: lastPositionX,
+                  y: startY - columnSpacing - (rowDistance * 3),
+                  width: columnSizes[index],
+                  height: rowHeight + columnSpacing,
+              };
+      
+              prepareRowBackground(table.headers[index], rectCell);
+      
+              prepareRow(row, index, i, rectRow, rectCell);
+      
+              if (typeof table.headers[index] === 'object') {
+                  table.headers[index].renderer && (cell = table.headers[index].renderer(cell, index, i, row, rectRow, rectCell, this));
+                  table.headers[index].align && (align = table.headers[index].align);
+                  table.headers[index].valign && (valign = table.headers[index].valign);
+              }
+      
+              cellPadding = prepareCellPadding(table.headers[index].padding || options.padding || 0);
+      
+              let topTextToAlignVertically = 0;
+              if (valign && valign !== 'top') {
+                  const heightText = this.heightOfString(cell, {
+                      width: columnSizes[index] - (cellPadding.left + cellPadding.right),
+                      align: align,
+                  });
+                  topTextToAlignVertically = rowDistance - columnSpacing + (rectCell.height - heightText) / 2;
+              }
+      
+              let bold = false;
+              if ((cell + '').includes('bold:')) {
+                  bold = true;
+                  cell = cell.replace('bold:', '');
+              }
+      
+              let attachment = false;
+              if ((cell + '').includes('attachment:')) {
+                  cell = cell.replace('attachment:', '');
+                  attachment = cell;
+              }
+      
+              if ((cell + '').includes('section:')) {
+                  cell = cell.replace('section:', '')
+                  let aux = cell.split('.')[0];
+                  attachment = aux;
+              }
+      
+              if (bold) {
+                  this.font('Helvetica-Bold').fillColor(attachment ? '#0462c1' : 'black').text(cell,
+                      lastPositionX + (cellPadding.left),
+                      startY + topTextToAlignVertically, {
+                          width: columnSizes[index] - (cellPadding.left + cellPadding.right),
+                          align: (i === 1 && options.firstLineCentered) ? 'center' : align,
+                          ...(attachment && { link: attachment }),
+                      });
+              } else {
+                  this.font('Helvetica').fillColor(attachment ? '#0462c1' : 'black').text(cell,
+                      lastPositionX + (cellPadding.left),
+                      startY + topTextToAlignVertically, {
+                          width: columnSizes[index] - (cellPadding.left + cellPadding.right),
+                          align: (i === 1 && options.firstLineCentered) ? 'center' : align,
+                          ...(attachment && { link: attachment }),
+                      });
+              }
+      
+              lastPositionX += columnSizes[index];
+              this.y = startY + rowHeight;
           });
-
-          // Refresh the y coordinate of the bottom of this row
+      
           rowBottomY = Math.max(startY + rowHeight, rowBottomY);
-
-          // console.log(this.page.height, rowBottomY, this.y);
-          // text is so big as page (crazy!)
+      
           if (rowBottomY > this.page.height) {
-            rowBottomY = this.y + columnSpacing + (rowDistance * 2);
+              rowBottomY = this.y + columnSpacing + (rowDistance * 2);
           }
-
-          // Separation line between rows
-          // check if its last row
+      
           if (i === table.rows.length - 1)
-            separationsRow('horizontal', startX, rowBottomY);
-
-
-        });
+              separationsRow('horizontal', startX, rowBottomY);
+      });
         // End rows
 
         // update position
